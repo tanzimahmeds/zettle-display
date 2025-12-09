@@ -1,15 +1,34 @@
-import { Order } from '@/types/order';
+import { Order, OrderStatus } from '@/types/order';
 import { StatusBadge } from './StatusBadge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Clock, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Clock, User, ChefHat, Check, X, Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface OrderCardProps {
   order: Order;
+  onStatusChange: (orderId: string, newStatus: OrderStatus) => void;
 }
 
-export const OrderCard = ({ order }: OrderCardProps) => {
+const statusActions: Record<OrderStatus, { next: OrderStatus; label: string; icon: React.ReactNode }[]> = {
+  pending: [
+    { next: 'preparing', label: 'Start', icon: <ChefHat className="w-3.5 h-3.5" /> },
+    { next: 'cancelled', label: 'Cancel', icon: <X className="w-3.5 h-3.5" /> },
+  ],
+  preparing: [
+    { next: 'ready', label: 'Ready', icon: <Bell className="w-3.5 h-3.5" /> },
+    { next: 'cancelled', label: 'Cancel', icon: <X className="w-3.5 h-3.5" /> },
+  ],
+  ready: [
+    { next: 'completed', label: 'Complete', icon: <Check className="w-3.5 h-3.5" /> },
+  ],
+  completed: [],
+  cancelled: [],
+};
+
+export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
   const timeAgo = formatDistanceToNow(new Date(order.createdAt), { addSuffix: true });
+  const actions = statusActions[order.status];
   
   return (
     <Card className="hover:shadow-lg transition-shadow duration-200 border-border/50">
@@ -40,7 +59,7 @@ export const OrderCard = ({ order }: OrderCardProps) => {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         <div className="space-y-2">
           {order.items.map((item) => (
             <div
@@ -59,6 +78,23 @@ export const OrderCard = ({ order }: OrderCardProps) => {
             </div>
           ))}
         </div>
+        
+        {actions.length > 0 && (
+          <div className="flex gap-2 pt-2 border-t border-border/30">
+            {actions.map((action) => (
+              <Button
+                key={action.next}
+                size="sm"
+                variant={action.next === 'cancelled' ? 'outline' : 'default'}
+                className={action.next === 'cancelled' ? 'text-destructive hover:text-destructive' : ''}
+                onClick={() => onStatusChange(order.id, action.next)}
+              >
+                {action.icon}
+                <span className="ml-1.5">{action.label}</span>
+              </Button>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
