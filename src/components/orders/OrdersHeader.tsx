@@ -1,13 +1,14 @@
 import { Button } from '@/components/ui/button';
-import { RefreshCw, UtensilsCrossed } from 'lucide-react';
+import { RefreshCw, UtensilsCrossed, Monitor } from 'lucide-react';
 
 interface OrdersHeaderProps {
   onRefresh: () => void;
+  onOpenDisplay: () => void;
   isLoading: boolean;
   orderCount: number;
 }
 
-export const OrdersHeader = ({ onRefresh, isLoading, orderCount }: OrdersHeaderProps) => {
+export const OrdersHeader = ({ onRefresh, onOpenDisplay, isLoading, orderCount }: OrdersHeaderProps) => {
   return (
     <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border py-4">
       <div className="container mx-auto px-4">
@@ -23,16 +24,27 @@ export const OrdersHeader = ({ onRefresh, isLoading, orderCount }: OrdersHeaderP
               </p>
             </div>
           </div>
-          <Button
-            onClick={onRefresh}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-            className="gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={onOpenDisplay}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Monitor className="w-4 h-4" />
+              Customer Display
+            </Button>
+            <Button
+              onClick={onRefresh}
+              variant="outline"
+              size="sm"
+              disabled={isLoading}
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </div>
     </header>
