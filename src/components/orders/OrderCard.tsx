@@ -40,11 +40,6 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
             </span>
             <StatusBadge status={order.status} />
           </div>
-          <div className="text-right">
-            <span className="text-xl font-bold text-primary">
-              ${order.total.toFixed(2)}
-            </span>
-          </div>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
           {order.customerName && (
@@ -60,21 +55,39 @@ export const OrderCard = ({ order, onStatusChange }: OrderCardProps) => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
+        <div className="space-y-3">
           {order.items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0"
+              className="py-2 border-b border-border/30 last:border-0"
             >
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium bg-secondary text-secondary-foreground px-2 py-0.5 rounded">
                   {item.quantity}x
                 </span>
-                <span className="text-sm text-foreground">{item.name}</span>
+                <span className="text-sm font-medium text-foreground">{item.name}</span>
               </div>
-              <span className="text-sm text-muted-foreground">
-                ${(item.quantity * item.unitPrice).toFixed(2)}
-              </span>
+              
+              {item.modifiers && item.modifiers.length > 0 && (
+                <div className="ml-8 mt-1 flex flex-wrap gap-1">
+                  {item.modifiers.map((mod, idx) => (
+                    <span 
+                      key={idx}
+                      className="text-xs bg-accent text-accent-foreground px-2 py-0.5 rounded"
+                    >
+                      {mod.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              
+              {item.instructions && (
+                <div className="ml-8 mt-1">
+                  <span className="text-xs text-warning font-medium">
+                    📝 {item.instructions}
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>

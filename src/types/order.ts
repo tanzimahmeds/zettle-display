@@ -1,10 +1,15 @@
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
 
+export interface ItemModifier {
+  name: string;
+}
+
 export interface OrderItem {
   id: string;
   name: string;
   quantity: number;
-  unitPrice: number;
+  modifiers?: ItemModifier[];
+  instructions?: string;
 }
 
 export interface Order {
@@ -12,7 +17,24 @@ export interface Order {
   orderNumber: string;
   status: OrderStatus;
   items: OrderItem[];
-  total: number;
   createdAt: string;
   customerName?: string;
+  readyAt?: string; // Track when order became ready
 }
+
+// Placeholder for Zettle API integration
+export interface ZettleApiConfig {
+  clientId: string;
+  clientSecret: string;
+  accessToken?: string;
+}
+
+// Zettle API will provide orders in this format
+// Transform to Order type when fetching
+export const ZETTLE_API_PLACEHOLDER = {
+  baseUrl: 'https://purchase.izettle.com',
+  endpoints: {
+    orders: '/purchases/v2',
+    // Add other endpoints as needed
+  },
+};
