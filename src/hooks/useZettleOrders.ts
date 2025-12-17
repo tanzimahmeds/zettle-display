@@ -33,12 +33,31 @@ export function useZettleOrders() {
     }
   }, []);
 
+  // Subscribe to realtime order updates
   useEffect(() => {
     fetchOrders();
-    
-    // Poll for new orders every 30 seconds
-    const interval = setInterval(fetchOrders, 30000);
-    return () => clearInterval(interval);
+
+    // Listen for new orders via realtime broadcast
+    const channel = supabase
+      .channel('orders')
+      .on('broadcast', { event: 'new_order' }, ({ payload }) => {
+        console.log('Received new order via realtime:', payload);
+        setOrders(prev => {
+          // Avoid duplicates
+          if (prev.some(o => o.id === payload.id)) {
+            return prev;
+          }
+          toast.success('New order received!', { 
+            description: `Order ${payload.orderNumber}` 
+          });
+          return [payload as Order, ...prev];
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchOrders]);
 
   const updateOrderStatus = useCallback((orderId: string, newStatus: Order['status']) => {

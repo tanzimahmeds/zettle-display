@@ -2,3 +2,6 @@ project_id = "afkkunvsaytxcfjtcgmq"
 
 [functions.zettle-orders]
 verify_jwt = false
+
+[functions.zettle-webhook]
+verify_jwt = false
