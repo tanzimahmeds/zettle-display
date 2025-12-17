@@ -1,12 +1,45 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Order } from '@/types/order';
+import { Order, OrderStatus } from '@/types/order';
 import { toast } from 'sonner';
 
+const STATUS_PRIORITY: Record<OrderStatus, number> = {
+  pending: 0,
+  preparing: 1,
+  ready: 2,
+  completed: 3,
+  cancelled: 4,
+};
+
+const COMPLETED_ORDER_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+
 export function useZettleOrders() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [rawOrders, setRawOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Filter out completed orders older than 30 minutes and sort by status, then by newest
+  const orders = useMemo(() => {
+    const now = Date.now();
+    
+    return rawOrders
+      .filter(order => {
+        // Keep non-completed orders
+        if (order.status !== 'completed') return true;
+        
+        // For completed orders, check if they're within 30 minutes
+        const completedAt = order.readyAt ? new Date(order.readyAt).getTime() : new Date(order.createdAt).getTime();
+        return now - completedAt < COMPLETED_ORDER_TIMEOUT_MS;
+      })
+      .sort((a, b) => {
+        // First sort by status priority
+        const statusDiff = STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status];
+        if (statusDiff !== 0) return statusDiff;
+        
+        // Then sort by createdAt (newest first)
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+  }, [rawOrders]);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -23,7 +56,7 @@ export function useZettleOrders() {
         throw new Error(data.error);
       }
       
-      setOrders(data.orders || []);
+      setRawOrders(data.orders || []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch orders';
       setError(message);
@@ -42,7 +75,7 @@ export function useZettleOrders() {
       .channel('orders')
       .on('broadcast', { event: 'new_order' }, ({ payload }) => {
         console.log('Received new order via realtime:', payload);
-        setOrders(prev => {
+        setRawOrders(prev => {
           // Avoid duplicates
           if (prev.some(o => o.id === payload.id)) {
             return prev;
@@ -61,16 +94,16 @@ export function useZettleOrders() {
   }, [fetchOrders]);
 
   const updateOrderStatus = useCallback((orderId: string, newStatus: Order['status']) => {
-    setOrders(prev => prev.map(order => 
+    setRawOrders(prev => prev.map(order => 
       order.id === orderId 
-        ? { ...order, status: newStatus, readyAt: newStatus === 'ready' ? new Date().toISOString() : order.readyAt }
+        ? { ...order, status: newStatus, readyAt: newStatus === 'ready' || newStatus === 'completed' ? new Date().toISOString() : order.readyAt }
         : order
     ));
     toast.success(`Order status updated to ${newStatus}`);
   }, []);
 
   const addOrder = useCallback((order: Order) => {
-    setOrders(prev => [order, ...prev]);
+    setRawOrders(prev => [order, ...prev]);
   }, []);
 
   return {
